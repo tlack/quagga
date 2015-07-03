@@ -1,12 +1,12 @@
 <!doctype html>
 <html>
 <head>
-	<title>qwebcli</title>
-	<script src="c.js"></script>
+	<title>quagga</title>
+	<script src="vendor/c.js"></script>
 	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css" />
 	<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:500normal" />
 	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
-	<link rel="stylesheet" href="animate.css"/>
+	<link rel="stylesheet" href="vendor/animate.css"/>
 	<style>
 	#nav { color: #ccc; margin-left: 1em; margin-bottom: 1em; position: absolute; right: 1em; top: 1em; }
 	#nav i { display: block; font-size: 32px; margin-bottom: 0.5em; }
@@ -23,7 +23,7 @@
 	td,th { vertical-align: top; padding: 4px; }
 	</style>
 	<script>
-	function qwebcli() {
+	function quagga() {
 		var MAXQ = 100;
 		var $i, $o, $scl, $ui, state, ws;
 		// low level functions:
@@ -201,7 +201,7 @@
 			throbber.pulse(true);
 			var wss='WebSocket';
 			if (!(wss in window))
-				return ui('qwebcli needs websocket support in your browser, which you do not appear to have');
+				return ui('quagga needs websocket support in your browser, which you do not appear to have');
 			ui('Connecting');
 			ws=new WebSocket('ws://'+window.location.host); ws.binaryType='arraybuffer';
 			ws.onopen=function(e){
@@ -240,7 +240,7 @@
 	<form class="pane" id="ui">
 	</form>
 	<script>
-		var q = new qwebcli();
+		var q = new quagga();
 		document.addEventListener('DOMContentLoaded', q.boot.bind(q));
 	</script>
 </body>
