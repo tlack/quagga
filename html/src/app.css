@@ -1,0 +1,18 @@
+@import '../vendor/animate.css';
+@import "//yui.yahooapis.com/pure/0.6.0/pure-min.css";
+@import "//fonts.googleapis.com/css?family=Source+Code+Pro:500normal";
+@import "//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css";
+#nav { color: #ccc; margin-left: 1em; margin-bottom: 1em; position: absolute; right: 1em; top: 1em; }
+#nav i { display: block; font-size: 32px; margin-bottom: 0.5em; clear:both;}
+#nav a { cursor: pointer; }
+#ui { margin-right: 96px; }
+.connected { color: #363; }
+.i { display: -moz-box; display: -webkit-box; width: 100%; }
+.o { display: block; }
+.pane { background: white; height: 100vh; padding: 1em; }
+.prompt { -moz-box-flex: 0; -webkit-box-flex: 0; -moz-flex:0;-webkit-flex:0; }
+.sending { color: #663; }
+body { background: #f0f0f0; font-size: 24px; font-family: 'Source Code Pro'; font-weight: 500; }
+input { display:block; -moz-box-flex:1; -webkit-box-flex: 1; -moz-flex:1; -webkit-flex:1; width:auto;}
+ol { margin-left: 1em; padding-left: 1em; }
+td,th { vertical-align: top; padding: 4px; }
