@@ -2,17 +2,46 @@
 @import "//yui.yahooapis.com/pure/0.6.0/pure-min.css";
 @import "//fonts.googleapis.com/css?family=Source+Code+Pro:500normal";
 @import "//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css";
-#nav { color: #ccc; margin-left: 1em; margin-bottom: 1em; position: absolute; right: 1em; top: 1em; }
-#nav i { display: block; font-size: 32px; margin-bottom: 0.5em; clear:both;}
-#nav a { cursor: pointer; }
+#nav { color: #ccc; margin-left: 1em; margin-bottom: 1em; position: fixed; margin-right: 1em; margin-top: 1em; right:0; top:0;}
+#nav i { display: block; font-size: 32px; margin-bottom: 0.5em; clear:both; }
+#nav i.on { color:red;}
+#nav i:before { cursor: pointer; }
 #ui { margin-right: 96px; }
 .connected { color: #363; }
-.i { display: -moz-box; display: -webkit-box; width: 100%; }
+.i { display: -moz-box; display: -webkit-box; width: 100%;}
 .o { display: block; }
-.pane { background: white; height: 100vh; padding: 1em; }
-.prompt { -moz-box-flex: 0; -webkit-box-flex: 0; -moz-flex:0;-webkit-flex:0; }
+.prompt { float:left; }
 .sending { color: #663; }
 body { background: #f0f0f0; font-size: 24px; font-family: 'Source Code Pro'; font-weight: 500; }
-input { display:block; -moz-box-flex:1; -webkit-box-flex: 1; -moz-flex:1; -webkit-flex:1; width:auto;}
+input { width:100%; }
+span {display: block; overflow: hidden;}
 ol { margin-left: 1em; padding-left: 1em; }
 td,th { vertical-align: top; padding: 4px; }
+
+#panes {
+  flex: 0.00001;
+  width:90vw;
+  height:100vh;
+  display:flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: stretch;
+  align-items: stretch;}
+.pane {
+  overflow: hidden;
+  flex-grow: 0.00001;
+  flex-shrink: 0;
+  /*flex-basis: 100vh;*/
+  flex-basis: 0px;
+  transition: all 500ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /*animation: flexGrow 500ms ease forwards;*/
+}
+.terminal{display:flex;flex-direction:column;}
+.terminal .output,.dir.open { overflow-y: scroll; flex:1; flex-grow:1;}
+.output pre {  white-space: pre-wrap;}
+.terminal form { display:flex; flex:1;flex-grow:0;flex-shrink:0;flex-basis:2em;}
+.pane.open { flex:1;padding: 1em; }
+.dark,.dark input { background-color: black;  color: #ddd; transition: all 100ms; }
+.dir .var { color:red; }
+.output .o { white-space: pre; }

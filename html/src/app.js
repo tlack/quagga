@@ -1,112 +1,115 @@
 /** @jsx m */
-'use strict'
+'use strict';
 import m from 'mithril'
+window.m=m;
 import wscon from './wscon'
-// import History from './History'
-const EHREF='javascript:;'
+import {deserialize,serialize} from '../vendor/c.module'
+import {
+  cl,ce,uuid,fmt,
+  EHREF,
+  ARROW_UP,
+  ARROW_DOWN,
+  pd,
+  noop,
+  ab2str
+} from './util'
+import viewFn from './app.view';
 
-var cl=console.log.bind(console)
-var _fmt = {
-  'array': function(d) {
-    return <div>
-      <span>`array[${d.length}]`:</span>
-      <ol>
-        {d.map(fmt).map((d1)=>
-          <li>{d1}</li>
-        )}
-      </ol>
-    </div>
+var Status = { view: (ctrl,args) =>
+  <div {...args}><h1>nothing in status yet</h1></div> }
+
+var q = {
+  controller: function(args){
+    var _this=this;
+    var MAXQ = 100;
+    var waitq={};
+    var ws=new WebSocket('ws://'+window.location.host); ws.binaryType='arraybuffer';
+    this.ws=ws;
+    this.handlers = {};
+    this.registerHandler = function (tag, cb) { handlers[tag]=cb; }
+    ws.onopen=function(e){cl(e);q.vm.ui('Websocket connected');m.redraw();
+      // ws.send("here[]");
+    };
+    ws.onclose=function(e){cl(e); q.vm.ui('Websocket closed');};
+    ws.onerror=function(e){cl(e); q.vm.ui('Websocket error');};
+    ws.onmessage=function(e){
+      var d = deserialize(e.data);
+      cl(d);
+      switch (d[0]) {
+        case'q':      q.vm.oq(d[1].expr, d[2]); q.vm.jumpDown(true); break;
+        case'state':  q.vm.dirContents(d[1]); m.redraw();  break;
+        case'dump':   q.vm.link(d.dump); break;
+      }
+    }
+    this.send=(qexpr,cb) => {
+        cl(["sendwait",qexpr,cb]);
+        if (Object.keys(waitq).length>MAXQ || qexpr.match('/(^|\")ID:')) return; // avoid cycles
+        var u=uuid();
+        waitq[u]=cb;
+        var serializedReq = serialize({qid:u, expr:' '+qexpr});
+        cl(ab2str(serializedReq));
+        ws.send(serializedReq);
+    }
+    q.ws=this.ws;
+    this.submit=(e) => {e.preventDefault();var expr=q.vm.cmd();
+      if(!expr)return;
+      q.vm.cmd('');
+      q.vm.cmdHistIdx(q.vm.cmdHist.push(expr));
+      this.send(expr)}
+    return this;
   },
-  'number': function(d) {
-    return d
-  },
-  'object': function(d) {
-    return <div>
-      <span>{"dict["+(Object.keys(d).length)+"]:"}</span>
-      <table className='obj'>
-        {Object.keys(d).map((k) => 
-          <tr><th>{fmt(k)}</th><td>{fmt(d[k])}</td></tr>
-        )}
-      </table>
-    </div>
-  },
-  'string': htmlesc
-}
-function fmt(data) {
-  var t=typeof data;
-  if (data instanceof Array) t='array';
-  console.log('fmt', data);
-  if (data===null) return 'null';
-  return (t in _fmt)?_fmt[t](data):'no handler '+t;
-}
-function htmlesc(str) {
-  var div = document.createElement('div');
-  div.appendChild(document.createTextNode(str));
-  return div.innerHTML;
-}
-var Terminal = {
-  view: (ctrl,args) => {
-    return <div>
-      {args.msgs().map((c)=> {
-        return <div>
-          {c.i!=null&&fmt(c.i)}
-          <br/>
-          {c.o!=null&&fmt(c.o)}
-        </div>
-      })}
-    </div>
-  }
-}
-var Dir = { view: (args) =>
-  <div className={'pane '+(args.open&&'open')}><h1>nothing in dir yet</h1></div> }
-var Status = { view: (args) =>
-  <div className={'pane '+(args.open&&'open')}><h1>nothing in status yet</h1></div> }
-var quapp = {
-  controller:function(args){this.vm=quapp.vm;return this;},
   vm: {
-    ui: (msg) => quapp.vm.msgs(quapp.vm.msgs().concat(m)),
-    msgs: m.prop([{i:'weeee',o:'que loser'}]),
-    pane: m.prop()
+    cmd:m.prop(''),
+    ui: (msg) => { q.vm.msgs(q.vm.msgs().concat({o:msg})) },
+    oq: (expr,res) => { q.vm.msgs(q.vm.msgs().concat({i:expr,o:res})); m.redraw(); },
+    msgs: m.prop([]), // array of {i:str o:any}
+    cmdHist: [],
+    cmdHistIdx: m.prop(0),
+    stashCmd: m.prop(''),
+    jumpDown:m.prop(false),
+
+    dirContents: m.prop({}),    
+
+    statusOpen: m.prop(false),
+    dirOpen: m.prop(false),
+    uiDirection: m.prop('column'),
+    uiDark: m.prop(true),
+
+    // toggleStatus: () => q.vm.statusOpen(!q.vm.statusOpen()),
+    toggleStatus: () => q.ws.send(serialize({u:uuid(), dump:true})),
+    toggleDir: () => q.vm.dirOpen(!q.vm.dirOpen()),
+    toggleUiDirection: () => q.vm.uiDirection(q.vm.uiDirection()=='column'?'row':'column'),
+    toggleUiColor: () => q.vm.uiDark(!q.vm.uiDark()),
+
+    link: m.prop(''),
+
+    handleHistory: (e) => {
+      var cmdHistIdx=q.vm.cmdHistIdx;var cmdHist=q.vm.cmdHist;var d=0;
+      switch (e.keyCode) {
+        case ARROW_UP:   d=(-1);break;
+        case ARROW_DOWN: d=1;   break;
+        default: cl('NOT MY JOB!');return;}
+      var nIdx=cmdHistIdx()+d;
+      if(e.keyCode==ARROW_UP&&cmdHistIdx()==cmdHist.length) {cl('stashing: '+q.vm.cmd());q.vm.stashCmd(q.vm.cmd())};
+      cmdHistIdx(nIdx); // always save a position change
+      if(e.keyCode==ARROW_DOWN&&nIdx==cmdHist.length) { q.vm.cmd(q.vm.stashCmd()); return}
+      if(0<=nIdx&&nIdx<cmdHist.length)                { q.vm.cmd(cmdHist[nIdx]);   return}
+      // cl({up:e.keyCode==ARROW_UP,down:e.keyCode==ARROW_DOWN,nidx:nIdx,cmdlen:cmdHist.length,stash:q.vm.stashCmd()})
+    }
   },
-  view: (ctrl) => {
-    if (!('WebSocket' in window))
-      return <h1>quagga needs websocket support in your browser, which you do not appear to have</h1>;
-
-    var {vm} = ctrl;
-    var {msgs,pane} = vm;
-
-    return <div>
-      <div id="nav">
-        <i onclick={pane.bind(vm,'status')} className="status fa fa-cloud"></i>
-        <i onclick={pane.bind(vm,'terminal')} className="terminal fa fa-terminal"></i>
-        <i onclick={pane.bind(vm,'dir')} className="dir fa fa-sitemap"></i>
-      </div>
-      <Status/>
-      <Dir/>
-      <Terminal msgs={msgs} />
-    </div>
-  }
+  view: viewFn
 }
+window.q = q;
+        // <Terminal msgs={msgs} aM={vm.ui}/>
 
 function quagga() {
-  var MAXQ = 100;
   var $i, $o, $scl, $ui, state, ws;
-  // low level functions:
+        // low level functions:
   function kd(ev) {
     console.log(ev);
     if (ev.keyCode==10||ev.keyCode==13) {
       sendi();
     }
-  }
-  function ui(html,cl) {
-    var div = document.createElement('div');
-    div.classList.add(cl?cl:'o');
-    div.innerHTML = html;
-    $ui.insertBefore(div, div.childNodes[div.length-1]);
-  }
-  // output q value - handy wrapper
-  function oq(value,cl) {
-    ui(fmt(value),cl);
   }
   function qesc(data) {
     return data.replace('"', '\\"', data);
@@ -114,13 +117,6 @@ function quagga() {
   function setstate(data) {
     state=data;
   }
-  function uuid() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-      return v.toString(16);
-    });
-  }
-
   // higher level stuff
 
   // handle 'error responses from server
@@ -131,53 +127,6 @@ function quagga() {
       console.log('error parse');
       oq({error: resp[0], line: resp[1], parse: result});
     });
-  }
-  var input = {
-    check: function() {
-    },
-    empty: function() {
-      return ($i && !$i.value)?true:false;
-    },
-    html: function() {
-      return "<input type=text/>";
-    },
-    render: function() {
-      console.log('render', $i);
-      if ($i && $i.parentNode) {
-        // if were removing an empty input, remove prompt too
-        console.log('val', $i.value);
-        if (this.empty() && 
-            $i.parentNode && 
-            $i.parentNode.parentNode) $i = $i.parentNode;
-        $i.parentNode.removeChild($i);
-        // delete $i;
-      }
-      ui('<span class=prompt>q)</span><input type=text/>', 'i');
-      $i = $$('input');
-      console.log($i, $i.parentNode);
-      $i.focus();
-    },
-    send: function(ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (input.empty()) return;
-      var v = $i.value;
-      cl(['sending',$i.value]);
-      input.check(v);
-      throbber.sending(true);
-      ws.send($i.value);
-      input.sent(v);
-    },
-    sent: function(line) {
-      cl(['sent', line]);
-      var pn = $i.parentNode;
-      pn.removeChild($i);
-      // delete $i;
-      $i = false;
-      pn.innerHTML += "<span class='sent'>"+htmlesc(line)+"</span>";
-      throbber.sending(false);
-      //input.render();
-    }
   }
   var throbber = {
     if_: function(on, classes) {
@@ -205,4 +154,5 @@ function quagga() {
   return pub;
 }
 
-m.mount(document.getElementById('app'), quapp);
+// debugger;
+m.mount(document.getElementById('app'), q);
