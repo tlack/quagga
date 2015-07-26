@@ -1,29 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-	<title>quagga</title>
-	<!-- all these includes are killin me -->
-	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css" />
-	<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:500normal" />
-	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
-	<link rel="stylesheet" href="vendor/animate.css"/>
-	<link rel="stylesheet" href="app.css"/>
-	<script src="vendor/c.js"></script>
-	<script src="app.js"></script>
-	<style>
-	</style>
+  <title>quagga</title>
+  <link rel="stylesheet" type="text/css" href="/dist/app.css"></script>
 </head>
 <body>
-	<div id="nav">
-		<i class="status fa fa-cloud"></i><br/>
-		<i class="terminal fa fa-terminal"></i><br/>
-		<i class="dir fa fa-sitemap"></i>
-	</div>
-	<form class="pane" id="ui">
-	</form>
-	<script>
-		var q = new quagga();
-		document.addEventListener('DOMContentLoaded', q.boot.bind(q));
-	</script>
+<div id='app'></div>
+<script type="text/javascript" src='/dist/vendor.js'></script>
+<script type="text/javascript" src='/dist/app.js'></script>
+<script type="text/javascript">document.write('<script src="' + (location.protocol || 'http:') + '//' + (location.hostname || 'localhost') + ':35729/livereload.js?snipver=1" type="text/javascript"><\/script>')</script>
 </body>
 </html>

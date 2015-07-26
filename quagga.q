@@ -1,10 +1,12 @@
 \d .quagga
+\e 1 
 / dotZdotPH:.z.ph / backup the standard get handler
 w:([]ws:();addr:();h:();lastAck:())
 wI:5005
 / cleanReq:`qid`expr!({"G"$x};{_[x;0]})
 cleanReq:`qid`expr!({"G"$x};::)
 activity:([] qid: 0Ng; expr:enlist"init")
+hits:([] uri:(); at:(); ip:())
 sendstate:{
   / -1"sending state to ",(string count .quagga.w)," clients";
   @[{neg[x] -8! (`state;value `.)};;()] each .quagga.w
@@ -14,6 +16,14 @@ sendstate:{
 \d .
 
 REQ:0N;
+contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
+.z.ph:{
+	0N!x;
+	if[""~u:first x;u:"index.html"];
+	`.quagga.hits insert (enlist u;.z.P;.z.a);
+	0N!u;
+	.h.hy[`$last"."vs u;contents u]}
+
 .z.ts:.quagga.sendstate;
 .z.wo:{
   -1"u: ",(string x)," connected from ",(string .z.a);
