@@ -9,7 +9,7 @@
 // ws.onmessage=function(e){var arrayBuffer=e.data;if(arrayBuffer){var v=deserialize(arrayBuffer);...
 // note ws.binaryType = 'arraybuffer';
 
-function deserialize(x){
+export function deserialize(x){
   var a=x[0],pos=8,j2p32=Math.pow(2,32),ub=new Uint8Array(x),sb=new Int8Array(x),bb=new Uint8Array(8),hb=new Int16Array(bb.buffer),ib=new Int32Array(bb.buffer),eb=new Float32Array(bb.buffer),fb=new Float64Array(bb.buffer);
   function rBool(){return rInt8()==1;}
   function rChar(){return String.fromCharCode(rInt8());}
@@ -73,7 +73,7 @@ function deserialize(x){
     return A;}
   return r();}
 
-function serialize(x){var a=1,pos=0,ub,bb=new Uint8Array(8),ib=new Int32Array(bb.buffer),fb=new Float64Array(bb.buffer);
+export function serialize(x){var a=1,pos=0,ub,bb=new Uint8Array(8),ib=new Int32Array(bb.buffer),fb=new Float64Array(bb.buffer);
   function toType(obj){return ({}).toString.call(obj).match(/\s([a-z|A-Z]+)/)[1].toLowerCase();};
   function getKeys(x){var v=[];for(var o in x)v.push(o);return v;}
   function getVals(x){var v=[];for(var o in x)v.push(x[o]);return v;}
