@@ -9,7 +9,7 @@ activity:([] qid: 0Ng; expr:enlist"init")
 hits:([] uri:(); at:(); ip:())
 sendstate:{
   / -1"sending state to ",(string count .quagga.w)," clients";
-  @[{neg[x] -8! (`state;value `.)};;()] each .quagga.w
+  {neg[x] -8! (`state;y "value `.")} ./: flip value exec ws,h from .quagga.w
   }
 
 ////////////////////////////////
@@ -42,15 +42,17 @@ contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
 .z.ws:{
   -1 "";
   req:-9!x; / use @[;;] here ?
+  if[0~count .quagga.w; :neg[.z.w] -8!enlist `reload]; / ask client to reload if we've lost everything
   workerHandle:first exec h from .quagga.w where ws=.z.w;
+
   if[1b~req[`dump];:neg[.z.w] -8!requestDump[workerHandle]]
   if[not (99h~type req);'"something is wrong"];
 
   req:.quagga.cleanReq@'req;
-
   `.quagga.activity insert req;
   / if [not " "~first req[`expr]]
-  workerRes:workerHandle req[`expr];
+
+  workerRes:@[workerHandle;req[`expr];{"'",x}];
   res:(`q;req;workerRes);
   if[100000< -22!res;(res[2]:`$"'result set too large";:neg[.z.w] -8!res)]
   neg[.z.w] -8!res
@@ -63,8 +65,7 @@ requestDump:{
   }
 
 .h.HOME:"html"
-gulpWatch:{system"gulp &"}
+gulpWatch:{system"gulp watch&"}
+/gulpWatch[]
 
-/ t 1000
-/ \t 0
-
+\t 5000

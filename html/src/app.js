@@ -39,6 +39,7 @@ var q = {
         case'q':      q.vm.oq(d[1].expr, d[2]); q.vm.jumpDown(true); break;
         case'state':  q.vm.dirContents(d[1]); m.redraw();  break;
         case'dump':   q.vm.link(d.dump); break;
+        case'reload': window.location.reload();
       }
     }
     this.send=(qexpr,cb) => {

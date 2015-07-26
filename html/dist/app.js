@@ -156,6 +156,8 @@ var q = {
           q.vm.dirContents(d[1]);_mithril2['default'].redraw();break;
         case 'dump':
           q.vm.link(d.dump);break;
+        case 'reload':
+          window.location.reload();
       }
     };
     this.send = function (qexpr, cb) {

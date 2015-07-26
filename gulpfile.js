@@ -12,6 +12,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var del = require('del');
 var autoprefixer = require('gulp-autoprefixer');
 var concat = require('gulp-concat');
+var fs = require('fs');
 var path = {
         main: 'app.js',
         vendor: 'vendor.js',
@@ -22,7 +23,14 @@ var deps = [
         'mithril',
         'c'
     ];
+
+try {if (fs.readFileSync('gulp.pid')){
+  console.log('already running');process.exit();}} catch (e) {}
+
 function errorHandler(err){console.log(err.message); this.emit('end'); }
+function exitHandler (opt,err) { console.log('exiting'); del.sync('gulp.pid'); process.exit(); }
+process.on('exit',  exitHandler);
+process.on('SIGINT', exitHandler);
 gulp.task('build:vendor', function () {
     var b = browserify({
         // require: deps,
@@ -79,3 +87,5 @@ gulp.task('watch', function (){
 });
 gulp.task('clean', function () {del(path.dist + '/*')});
 gulp.task('default', ['build:all','watch']);
+
+fs.writeFileSync('gulp.pid', process.pid);
