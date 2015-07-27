@@ -52,10 +52,23 @@ contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
   `.quagga.activity insert req;
   / if [not " "~first req[`expr]]
 
-  workerRes:@[workerHandle;req[`expr];{"'",x}];
-  res:(`q;req;workerRes);
-  if[100000< -22!res;(res[2]:`$"'result set too large";:neg[.z.w] -8!res)]
-  neg[.z.w] -8!res
+  clientHandle:.z.w;
+  (neg workerHandle) ({
+    // N.B. .z.w refers to us here
+    cH:x[0];
+    qReq:x[1;`expr];
+    qRes: @[value;qReq;{"'",x}];
+    (neg .z.w) (`returnAsyncEval; (cH;x[1];qRes) )};(clientHandle;req))
+  / workerRes:@[workerHandle;req[`expr];{"'",x}];
+  / res:(`q;req;workerRes);
+  / if[100000< -22!res;(res[2]:`$"'result set too large";:neg[.z.w] -8!res)]
+  / neg[.z.w] -8!res
+  }
+
+returnAsyncEval:{
+  / destructuring would be nice
+  / (clientHandle;clientReq;workerRes):x
+  neg[x[0]] (-8)!(`q;x[1];x[2])
   }
 
 requestDump:{
