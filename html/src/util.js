@@ -13,9 +13,9 @@ export const EHREF='javascript:;'
 export const ARROW_UP=38
 export const ARROW_DOWN=40
 export const pd=(e)=>e.preventDefault();
-export const noop=()=>{}
+export const noop=()=>{};
 
-var _fmt = {
+export var _fmt = {
   'array': function(d) {
     return <div>
       <span>`array[${d.length}]`:</span>
@@ -33,12 +33,31 @@ var _fmt = {
       </table>
     </div>
   },
-  'string': (x) => x
-}
+  'string': (x) => x,
+	'table': function(d) {
+    return <div>
+      <span>{"table["+(d.length)+"]:"}</span>
+      <table className='obj'>
+				<thead>
+					<tr>
+					{Object.keys(d[0]).map((k)=><th>{fmt(k)}</th>)}
+					</tr>
+				</thead>
+				<tbody>
+        {d.map((k) =>
+					<tr>
+						{Object.keys(k).map((dk)=><td>{fmt(k[dk])}</td>)}
+					</tr>)}
+				</tbody>
+      </table>
+    </div>
+	}
+};
 
 export function fmt (data) {
   var t=typeof data;
-  if (data instanceof Array) t='array';
+  if (data instanceof Array) 
+		t=(typeof data[0]=='object')?'table':'array';
   // console.log('fmt', data);
   if (data===null) return 'null';
   return (t in _fmt)?_fmt[t](data):'no handler '+t;
