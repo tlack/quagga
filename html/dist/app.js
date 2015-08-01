@@ -531,12 +531,61 @@ var _fmt = {
   },
   'string': function string(x) {
     return x;
+  },
+  'table': function table(d) {
+    return m(
+      'div',
+      null,
+      m(
+        'span',
+        null,
+        'table[' + d.length + ']:'
+      ),
+      m(
+        'table',
+        { className: 'obj' },
+        m(
+          'thead',
+          null,
+          m(
+            'tr',
+            null,
+            Object.keys(d[0]).map(function (k) {
+              return m(
+                'th',
+                null,
+                fmt(k)
+              );
+            })
+          )
+        ),
+        m(
+          'tbody',
+          null,
+          d.map(function (k) {
+            return m(
+              'tr',
+              null,
+              Object.keys(k).map(function (dk) {
+                return m(
+                  'td',
+                  null,
+                  fmt(k[dk])
+                );
+              })
+            );
+          })
+        )
+      )
+    );
   }
 };
 
+exports._fmt = _fmt;
+
 function fmt(data) {
   var t = typeof data;
-  if (data instanceof Array) t = 'array';
+  if (data instanceof Array) t = typeof data[0] == 'object' ? 'table' : 'array';
   // console.log('fmt', data);
   if (data === null) return 'null';
   return t in _fmt ? _fmt[t](data) : 'no handler ' + t;
