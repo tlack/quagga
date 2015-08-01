@@ -1,3 +1,7 @@
+0N!tables[]
+if[not`ACTIVITY in tables[];ACTIVITY:0N!([] qid: 0Ng; expr:enlist"init")]
+if[not`HITS     in tables[];HITS:0N!([] uri:(); at:(); ip:())]
+
 \d .quagga
 \e 1 
 / dotZdotPH:.z.ph / backup the standard get handler
@@ -5,8 +9,6 @@ w:([]ws:();addr:();h:();lastAck:())
 wI:5005
 / cleanReq:`qid`expr!({"G"$x};{_[x;0]})
 cleanReq:`qid`expr!({"G"$x};::)
-activity:([] qid: 0Ng; expr:enlist"init")
-hits:([] uri:(); at:(); ip:())
 sendstate:{
   / -1"sending state to ",(string count .quagga.w)," clients";
   {neg[x] -8! (`state;y "value `.")} ./: flip value exec ws,h from .quagga.w
@@ -20,7 +22,7 @@ contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
 .z.ph:{
 	0N!x;
 	if[""~u:first x;u:"index.html"];
-	`.quagga.hits insert (enlist u;.z.P;.z.a);
+	`HITS insert (enlist u;.z.P;.z.a);
 	0N!u;
 	.h.hy[`$last"."vs u;contents u]}
 
@@ -49,7 +51,7 @@ contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
   if[not (99h~type req);'"something is wrong"];
 
   req:.quagga.cleanReq@'req;
-  `.quagga.activity insert req;
+  `ACTIVITY insert req;
   / if [not " "~first req[`expr]]
 
   clientHandle:.z.w;
