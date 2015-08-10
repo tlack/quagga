@@ -15,16 +15,14 @@ var del = require('del');
 var autoprefixer = require('gulp-autoprefixer');
 var concat = require('gulp-concat');
 var fs = require('fs');
+var exorcist = require('exorcist');
 var path = {
         main: 'app.js',
         vendor: 'vendor.js',
         src: './html/src',
         dist: './html/dist'
     };
-var deps = [
-        'mithril',
-        'c'
-    ];
+var deps = ['mithril'];
 
 try {if (fs.readFileSync('gulp.pid')){
   console.log('already running');process.exit();}} catch (e) {}
@@ -38,12 +36,9 @@ babelify = babelify.configure({ plugins: ["object-assign"] })
 
 gulp.task('build:vendor', function () {
     var b = browserify({
-        // require: deps,
         debug: debug
     })
     .require(require.resolve('mithril'), { expose: 'mithril' })
-    .require(require.resolve('./html/vendor/c.js'), { expose: 'c' })
-    .transform(babelify)
     .bundle()
     .on('error', errorHandler)
     .pipe(source(path.vendor))
@@ -60,6 +55,7 @@ gulp.task('build:src', function () {
     .external(deps)
     .transform(babelify)
     .bundle()
+    .pipe(exorcist(path.dist + '/' + path.main + '.map'))
     .on('error', errorHandler)
     .pipe(source(path.main))
     .pipe(buffer());

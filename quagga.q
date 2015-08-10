@@ -6,6 +6,9 @@ if[not`WS       in tables[];WS:0N!      ([ wid: ()];    name:();      last_dt:()
 if[not`WS_USER in tables[];WS_USER:0N!  ([] uid: ();    wid:())]
 system"S -",($)(*/)(*)"i"$system"openssl rand -hex 2"
 DP:{if[DEBUG;-1 x]}
+DEBUG:1b;
+ISOLATE:1b;
+worker_cmd:$[ISOLATE;"sudo -u qclient /opt/q/l32/q";"q"]
 .h.HOME:"html"
 gulpWatch:{system"gulp watch&"}
 \d .quagga
@@ -30,7 +33,6 @@ generateName:{[]
 
 ////////////////////////////////
 \d .
-DEBUG:1b;
 REQ:0N;
 contents:{"c"$ @[read1;`$.h.HOME,"/",x;""]}
 
@@ -86,20 +88,20 @@ requestDump:{
 handleConnect:{[client_handle;req]
   REQ::req;
   $[not`uid in key req;[                                                                  DP"generating user token"; / why doesnt this work? req[`uid]:rand 0Ng;
-      req:req,(1#`uid)!1#rand 0Ng;                                                      
+      req:req,(1#`uid)!1#rand 0Ng;
     ];[                                                                                   DP"touching logged in user";
       req:req,flip select name from USERS where uid=req`uid;
       ]];
   `USERS upsert (req`uid;.z.p);
   $[0~count workspaces:select wid,name from WS_USER ij/(WS;USERS) where uid=req`uid;[     DP"creating a default workspace";
-      req:req,(1#`workspaces)!enlist enlist`wid`name!ws:(wid:rand 0Ng;name:.quagga.generateName[]);          
+      req:req,(1#`workspaces)!enlist enlist`wid`name!ws:(wid:rand 0Ng;name:.quagga.generateName[]);
       `WS upsert ws,.z.p;
       `WS_USER insert (req`uid;wid);
     ];[                                                                                   DP"getting user workspaces";
-      req[`workspaces]:workspaces;                                                      
+      req[`workspaces]:workspaces;
       ]];
   $[0~count select from .quagga.w where wid in req[`workspaces;`wid];[                    DP"spawning a workspace";
-      system 0N!"q c.q -u 1 -p ",(($).quagga.wI+:1)," -name ",req[`workspaces;0;`name];
+      system 0N!worker_cmd," c.q -u 1 -p ",(($).quagga.wI+:1)," -name ",req[`workspaces;0;`name];
       system"sleep 1";
       h:hopen addr:`$"::",($).quagga.wI;
       `.quagga.w upsert (req[`workspaces;0;`wid];(enlist client_handle);addr;h;.z.p);
