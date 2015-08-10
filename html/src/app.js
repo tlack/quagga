@@ -3,7 +3,9 @@
 import m from 'mithril'
 window.m=m;
 import wscon from './wscon'
-import {deserialize,serialize} from '../vendor/c.module'
+// import {deserialize,serialize} from '../vendor/c.module'
+const serialize = JSON.stringify;
+const deserialize = JSON.parse;
 import {
   cl,ce,uuid,fmt,
   EHREF,
@@ -11,35 +13,45 @@ import {
   ARROW_DOWN,
   pd,
   noop,
-  ab2str
+  ab2str,
+  LS_KEY
 } from './util'
 import viewFn from './app.view';
 
-var Status = { view: (ctrl,args) =>
-  <div {...args}><h1>nothing in status yet</h1></div> }
+var USER_TOKEN = JSON.parse(localStorage[LS_KEY]||"{}");
 
 var q = {
   controller: function(args){
-    var _this=this;
+    var ctrl = this;
     var MAXQ = 100;
     var waitq={};
     var ws=new WebSocket('ws://'+window.location.host); ws.binaryType='arraybuffer';
     this.ws=ws;
     this.handlers = {};
     this.registerHandler = function (tag, cb) { handlers[tag]=cb; }
+    this.handleConnect = function(token) {
+      USER_TOKEN = token;
+      var current_workspace = USER_TOKEN.workspaces[0];
+      USER_TOKEN.current_wid = current_workspace.wid;
+      q.vm.wsName(current_workspace.name);
+      localStorage[LS_KEY] = JSON.stringify(token);
+      m.redraw();
+    }
     ws.onopen=function(e){cl(e);q.vm.ui('Websocket connected');m.redraw();
-      // ws.send("here[]");
+      ws.send(serialize(Object.assign(USER_TOKEN,{type:"connect"})));
     };
     ws.onclose=function(e){cl(e); q.vm.ui('Websocket closed');};
     ws.onerror=function(e){cl(e); q.vm.ui('Websocket error');};
     ws.onmessage=function(e){
       var d = deserialize(e.data);
       cl(d);
-      switch (d[0]) {
-        case'q':      q.vm.oq(d[1].expr, d[2]); q.vm.jumpDown(true); break;
-        case'state':  q.vm.dirContents(d[1]); m.redraw();  break;
-        case'dump':   q.vm.link(d.dump); break;
-        case'reload': window.location.reload();
+      switch (d.type) {
+        case'eval':     q.vm.oq(d.in, d.out); q.vm.jumpDown(true); break;
+        case'state':    q.vm.dirContents(d[1]); m.redraw();  break;
+        case'dump':     q.vm.link(d.dump); break;
+        case'connect':  ctrl.handleConnect(d);break;
+        case'reload':   window.location.reload();break;
+        default:        q.vm.ui(e.data);
       }
     }
     this.send=(qexpr,cb) => {
@@ -47,7 +59,9 @@ var q = {
         if (Object.keys(waitq).length>MAXQ || qexpr.match('/(^|\")ID:')) return; // avoid cycles
         var u=uuid();
         waitq[u]=cb;
-        var serializedReq = serialize({qid:u, expr:' '+qexpr});
+        debugger;
+        var serializedReq = JSON.stringify({
+          type:'eval', wid:USER_TOKEN['current_workspace'], uid:u, expr:' '+qexpr});
         cl(ab2str(serializedReq));
         ws.send(serializedReq);
     }
@@ -61,23 +75,24 @@ var q = {
   },
   vm: {
     cmd:m.prop(''),
-    ui: (msg) => { q.vm.msgs(q.vm.msgs().concat({o:msg})) },
+    ui: (msg) => { q.vm.msgs(q.vm.msgs().concat({o:msg})); m.redraw(); },
     oq: (expr,res) => { q.vm.msgs(q.vm.msgs().concat({i:expr,o:res})); m.redraw(); },
     msgs: m.prop([]), // array of {i:str o:any}
     cmdHist: [],
     cmdHistIdx: m.prop(0),
     stashCmd: m.prop(''),
     jumpDown:m.prop(false),
+    wsName: m.prop(''),
 
     dirContents: m.prop({}),    
 
     statusOpen: m.prop(false),
     dirOpen: m.prop(false),
     uiDirection: m.prop('column'),
-    uiDark: m.prop(true),
+    uiDark: m.prop(false),
 
-    // toggleStatus: () => q.vm.statusOpen(!q.vm.statusOpen()),
-    toggleStatus: () => q.ws.send(serialize({u:uuid(), dump:true})),
+    toggleStatus: () => q.vm.statusOpen(!q.vm.statusOpen()),
+    // takeDump: () => q.ws.send(serialize({u:uuid(), dump:true})),
     toggleDir: () => q.vm.dirOpen(!q.vm.dirOpen()),
     toggleUiDirection: () => q.vm.uiDirection(q.vm.uiDirection()=='column'?'row':'column'),
     toggleUiColor: () => q.vm.uiDark(!q.vm.uiDark()),
@@ -101,59 +116,5 @@ var q = {
   view: viewFn
 }
 window.q = q;
-        // <Terminal msgs={msgs} aM={vm.ui}/>
 
-function quagga() {
-  var $i, $o, $scl, $ui, state, ws;
-        // low level functions:
-  function kd(ev) {
-    console.log(ev);
-    if (ev.keyCode==10||ev.keyCode==13) {
-      sendi();
-    }
-  }
-  function qesc(data) {
-    return data.replace('"', '\\"', data);
-  }
-  function setstate(data) {
-    state=data;
-  }
-  // higher level stuff
-
-  // handle 'error responses from server
-  function error(resp) {
-    // try to 'parse' whatever user entered
-    cl(['error',resp]);
-    ws.sendwait('parse "'+qesc(resp[1])+'"', function(result) {
-      console.log('error parse');
-      oq({error: resp[0], line: resp[1], parse: result});
-    });
-  }
-  var throbber = {
-    if_: function(on, classes) {
-      var classes=classes.split(' ');
-      classes.forEach(function(cl) {
-        var cb = on ? function(cl){$scl.add(cl)} : function(cl){$scl.remove(cl)};
-        cb();
-      });
-    },
-    pulse: function(on) {
-      this.if_(on, 'animated infinite pulse');
-    },
-    sending: function(on) {
-      this.if_(on, 'animated infinite pulse sending');
-    }
-  }
-  var pub = {
-    boot: function boot() {
-      $scl = $$('.status').classList;
-      $ui = $$('#ui');
-      $ui.addEventListener('submit', input.send, true);
-      wscon();
-    }
-  }
-  return pub;
-}
-
-// debugger;
 m.mount(document.getElementById('app'), q);

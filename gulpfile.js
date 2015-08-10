@@ -1,8 +1,10 @@
 'use strict';
 var debug = true;
+var doLivereload = true;
 var gulp = require('gulp');
 var browserify = require('browserify');
 var livereload = require('gulp-livereload');
+var embedlr = require('gulp-embedlr');
 var concatCss = require('gulp-concat-css');
 var babelify = require("babelify");
 var source = require('vinyl-source-stream');
@@ -31,6 +33,9 @@ function errorHandler(err){console.log(err.message); this.emit('end'); }
 function exitHandler (opt,err) { console.log('exiting'); del.sync('gulp.pid'); process.exit(); }
 process.on('exit',  exitHandler);
 process.on('SIGINT', exitHandler);
+
+babelify = babelify.configure({ plugins: ["object-assign"] })
+
 gulp.task('build:vendor', function () {
     var b = browserify({
         // require: deps,
@@ -81,7 +86,13 @@ gulp.task('build:all',[
     'build:vendor',
     'build:css',
     'build:src'])
-gulp.task('watch', function (){
+gulp.task('watch', function () {
+    // if (doLivereload) {
+    //     gulp.src("./html/index.html")
+    //         .pipe(embedlr())
+    //         .pipe(gulp.dest('./html/lr'));
+    // }
+
     livereload.listen();
     gulp.watch([path.src + '/*'],['build:all']);
 });

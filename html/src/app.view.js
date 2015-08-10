@@ -3,10 +3,20 @@
 import m from 'mithril'
 import {fmt} from './util'
 import Dir from './Dir'
-import Status from './Status'
+
+var Status = {
+  view: (ctrl,args) => {
+    debugger;
+      // {args.dumpLink() ? <a href={args.dumpLink()} target='_blank'>Workspace available for download @ {args.dumpLink()}</a> :null}
+    return <div>
+      <span><strong>Workspace:</strong> {args.wsName()}</span>
+    </div>
+  }
+}
 
 var viewFn = (ctrl, args) => {
-  if (!('WebSocket' in window)) return <h1>quagga needs websocket support in your browser, which you do not appear to have</h1>
+  if (!('WebSocket' in window))
+    return <h1>quagga needs websocket support in your browser, which you do not appear to have. <a href='//q4a.co/eval/'>Try q4a.co/eval instead</a></h1>
 
   var {vm} = q;
 
@@ -19,7 +29,7 @@ var viewFn = (ctrl, args) => {
       <a onclick={vm.toggleUiColor.bind()}><i className={`fa fa-adjust`}/></a>
     </div>
     <div id='panes' style={`flex-direction:${vm.uiDirection()}`}>
-      <div className={`pane status ${vm.statusOpen()?'open':''}`}><Status/></div>
+      <div className={`pane status ${vm.statusOpen()?'open':''}`}><Status {...vm}/></div>
       <div className='pane open terminal'>
         <div className='output' config={(el,initd) => { if (vm.jumpDown()) {el.scrollTop=el.scrollHeight; vm.jumpDown(false)} } }>
         {vm.msgs().map((c)=> {

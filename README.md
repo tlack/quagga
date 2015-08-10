@@ -32,7 +32,7 @@ Disclaimer
 
 No warranties, etc.
 
-Q/K/Kdb+ are trademarks of KX Systems.
+Kdb+ is a trademark of Kx Systems.
 
 See Also
 --------

@@ -12,6 +12,7 @@ export function uuid() {
 export const EHREF='javascript:;'
 export const ARROW_UP=38
 export const ARROW_DOWN=40
+export const LS_KEY = '_quagga_token';
 export const pd=(e)=>e.preventDefault();
 export const noop=()=>{};
 

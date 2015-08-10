@@ -51,34 +51,11 @@ var Dir = {
 exports['default'] = Dir;
 module.exports = exports['default'];
 
-},{"./util":5,"mithril":"mithril"}],2:[function(require,module,exports){
+},{"./util":4,"mithril":"mithril"}],2:[function(require,module,exports){
 /** @jsx m */
 'use strict';
-Object.defineProperty(exports, '__esModule', {
-  value: true
-});
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-var _mithril = require('mithril');
-
-var _mithril2 = _interopRequireDefault(_mithril);
-
-var Status = { view: function view(ctrl, args) {
-    return (0, _mithril2['default'])(
-      'h1',
-      null,
-      'nothing in status yet'
-    );
-  }
-};
-
-exports['default'] = Status;
-module.exports = exports['default'];
-
-},{"mithril":"mithril"}],3:[function(require,module,exports){
-/** @jsx m */
-'use strict';
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -90,8 +67,6 @@ var _wscon = require('./wscon');
 
 var _wscon2 = _interopRequireDefault(_wscon);
 
-var _vendorCModule = require('../vendor/c.module');
-
 var _util = require('./util');
 
 var _appView = require('./app.view');
@@ -100,34 +75,17 @@ var _appView2 = _interopRequireDefault(_appView);
 
 window.m = _mithril2['default'];
 
-var USER_TOKEN = '_quagga_token' in localStorage ? localStorage['_quagga_token'] : null;
+// import {deserialize,serialize} from '../vendor/c.module'
+var serialize = JSON.stringify;
+var deserialize = JSON.parse;
 
-var Status = {
-  view: function view(ctrl, args) {
-    var contents = (0, _mithril2['default'])(
-      'h1',
-      null,
-      'nothing in status yet'
-    );
-    if (args.dumpLink) content = (0, _mithril2['default'])(
-      'a',
-      { href: args.dumpLink, target: '_blank' },
-      'Workspace available for download @ ',
-      args.dumpLink
-    );
-    return (0, _mithril2['default'])(
-      'div',
-      null,
-      content
-    );
-  }
-};
+var USER_TOKEN = JSON.parse(localStorage[_util.LS_KEY] || '{}');
 
 var q = {
   controller: function controller(args) {
-    var _this2 = this;
-
     var _this = this;
+
+    var ctrl = this;
     var MAXQ = 100;
     var waitq = {};
     var ws = new WebSocket('ws://' + window.location.host);ws.binaryType = 'arraybuffer';
@@ -136,9 +94,17 @@ var q = {
     this.registerHandler = function (tag, cb) {
       handlers[tag] = cb;
     };
+    this.handleConnect = function (token) {
+      USER_TOKEN = token;
+      var current_workspace = USER_TOKEN.workspaces[0];
+      USER_TOKEN.current_wid = current_workspace.wid;
+      q.vm.wsName(current_workspace.name);
+      localStorage[_util.LS_KEY] = JSON.stringify(token);
+      _mithril2['default'].redraw();
+    };
     ws.onopen = function (e) {
       (0, _util.cl)(e);q.vm.ui('Websocket connected');_mithril2['default'].redraw();
-      // ws.send("here[]");
+      ws.send(serialize(_extends(USER_TOKEN, { type: 'connect' })));
     };
     ws.onclose = function (e) {
       (0, _util.cl)(e);q.vm.ui('Websocket closed');
@@ -147,17 +113,21 @@ var q = {
       (0, _util.cl)(e);q.vm.ui('Websocket error');
     };
     ws.onmessage = function (e) {
-      var d = (0, _vendorCModule.deserialize)(e.data);
+      var d = deserialize(e.data);
       (0, _util.cl)(d);
-      switch (d[0]) {
-        case 'q':
-          q.vm.oq(d[1].expr, d[2]);q.vm.jumpDown(true);break;
+      switch (d.type) {
+        case 'eval':
+          q.vm.oq(d['in'], d.out);q.vm.jumpDown(true);break;
         case 'state':
           q.vm.dirContents(d[1]);_mithril2['default'].redraw();break;
         case 'dump':
           q.vm.link(d.dump);break;
+        case 'connect':
+          ctrl.handleConnect(d);break;
         case 'reload':
-          window.location.reload();
+          window.location.reload();break;
+        default:
+          q.vm.ui(e.data);
       }
     };
     this.send = function (qexpr, cb) {
@@ -165,7 +135,9 @@ var q = {
       if (Object.keys(waitq).length > MAXQ || qexpr.match('/(^|")ID:')) return; // avoid cycles
       var u = (0, _util.uuid)();
       waitq[u] = cb;
-      var serializedReq = (0, _vendorCModule.serialize)({ qid: u, expr: ' ' + qexpr });
+      debugger;
+      var serializedReq = JSON.stringify({
+        type: 'eval', wid: USER_TOKEN['current_workspace'], uid: u, expr: ' ' + qexpr });
       (0, _util.cl)((0, _util.ab2str)(serializedReq));
       ws.send(serializedReq);
     };
@@ -175,14 +147,14 @@ var q = {
       if (!expr) return;
       q.vm.cmd('');
       q.vm.cmdHistIdx(q.vm.cmdHist.push(expr));
-      _this2.send(expr);
+      _this.send(expr);
     };
     return this;
   },
   vm: {
     cmd: _mithril2['default'].prop(''),
     ui: function ui(msg) {
-      q.vm.msgs(q.vm.msgs().concat({ o: msg }));
+      q.vm.msgs(q.vm.msgs().concat({ o: msg }));_mithril2['default'].redraw();
     },
     oq: function oq(expr, res) {
       q.vm.msgs(q.vm.msgs().concat({ i: expr, o: res }));_mithril2['default'].redraw();
@@ -192,18 +164,19 @@ var q = {
     cmdHistIdx: _mithril2['default'].prop(0),
     stashCmd: _mithril2['default'].prop(''),
     jumpDown: _mithril2['default'].prop(false),
+    wsName: _mithril2['default'].prop(''),
 
     dirContents: _mithril2['default'].prop({}),
 
     statusOpen: _mithril2['default'].prop(false),
     dirOpen: _mithril2['default'].prop(false),
     uiDirection: _mithril2['default'].prop('column'),
-    uiDark: _mithril2['default'].prop(true),
+    uiDark: _mithril2['default'].prop(false),
 
-    // toggleStatus: () => q.vm.statusOpen(!q.vm.statusOpen()),
     toggleStatus: function toggleStatus() {
-      return q.ws.send((0, _vendorCModule.serialize)({ u: (0, _util.uuid)(), dump: true }));
+      return q.vm.statusOpen(!q.vm.statusOpen());
     },
+    // takeDump: () => q.ws.send(serialize({u:uuid(), dump:true})),
     toggleDir: function toggleDir() {
       return q.vm.dirOpen(!q.vm.dirOpen());
     },
@@ -242,68 +215,10 @@ var q = {
   view: _appView2['default']
 };
 window.q = q;
-// <Terminal msgs={msgs} aM={vm.ui}/>
 
-function quagga() {
-  var $i, $o, $scl, $ui, state, ws;
-  // low level functions:
-  function kd(ev) {
-    console.log(ev);
-    if (ev.keyCode == 10 || ev.keyCode == 13) {
-      sendi();
-    }
-  }
-  function qesc(data) {
-    return data.replace('"', '\\"', data);
-  }
-  function setstate(data) {
-    state = data;
-  }
-  // higher level stuff
-
-  // handle 'error responses from server
-  function error(resp) {
-    // try to 'parse' whatever user entered
-    (0, _util.cl)(['error', resp]);
-    ws.sendwait('parse "' + qesc(resp[1]) + '"', function (result) {
-      console.log('error parse');
-      oq({ error: resp[0], line: resp[1], parse: result });
-    });
-  }
-  var throbber = {
-    if_: function if_(on, classes) {
-      var classes = classes.split(' ');
-      classes.forEach(function (cl) {
-        var cb = on ? function (cl) {
-          $scl.add(cl);
-        } : function (cl) {
-          $scl.remove(cl);
-        };
-        cb();
-      });
-    },
-    pulse: function pulse(on) {
-      this.if_(on, 'animated infinite pulse');
-    },
-    sending: function sending(on) {
-      this.if_(on, 'animated infinite pulse sending');
-    }
-  };
-  var pub = {
-    boot: function boot() {
-      $scl = $$('.status').classList;
-      $ui = $$('#ui');
-      $ui.addEventListener('submit', input.send, true);
-      (0, _wscon2['default'])();
-    }
-  };
-  return pub;
-}
-
-// debugger;
 _mithril2['default'].mount(document.getElementById('app'), q);
 
-},{"../vendor/c.module":7,"./app.view":4,"./util":5,"./wscon":6,"mithril":"mithril"}],4:[function(require,module,exports){
+},{"./app.view":3,"./util":4,"./wscon":5,"mithril":"mithril"}],3:[function(require,module,exports){
 /** @jsx m */
 'use strict';
 Object.defineProperty(exports, '__esModule', {
@@ -322,15 +237,38 @@ var _Dir = require('./Dir');
 
 var _Dir2 = _interopRequireDefault(_Dir);
 
-var _Status = require('./Status');
-
-var _Status2 = _interopRequireDefault(_Status);
+var Status = {
+  view: function view(ctrl, args) {
+    debugger;
+    // {args.dumpLink() ? <a href={args.dumpLink()} target='_blank'>Workspace available for download @ {args.dumpLink()}</a> :null}
+    return (0, _mithril2['default'])(
+      'div',
+      null,
+      (0, _mithril2['default'])(
+        'span',
+        null,
+        (0, _mithril2['default'])(
+          'strong',
+          null,
+          'Workspace:'
+        ),
+        ' ',
+        args.wsName()
+      )
+    );
+  }
+};
 
 var viewFn = function viewFn(ctrl, args) {
   if (!('WebSocket' in window)) return (0, _mithril2['default'])(
     'h1',
     null,
-    'quagga needs websocket support in your browser, which you do not appear to have'
+    'quagga needs websocket support in your browser, which you do not appear to have. ',
+    (0, _mithril2['default'])(
+      'a',
+      { href: '//q4a.co/eval/' },
+      'Try q4a.co/eval instead'
+    )
   );
 
   var _q = q;
@@ -376,7 +314,7 @@ var viewFn = function viewFn(ctrl, args) {
       (0, _mithril2['default'])(
         'div',
         { className: 'pane status ' + (vm.statusOpen() ? 'open' : '') },
-        (0, _mithril2['default'])(_Status2['default'], null)
+        (0, _mithril2['default'])(Status, vm)
       ),
       (0, _mithril2['default'])(
         'div',
@@ -434,7 +372,7 @@ var viewFn = function viewFn(ctrl, args) {
 exports['default'] = viewFn;
 module.exports = exports['default'];
 
-},{"./Dir":1,"./Status":2,"./util":5,"mithril":"mithril"}],5:[function(require,module,exports){
+},{"./Dir":1,"./util":4,"mithril":"mithril"}],4:[function(require,module,exports){
 /** @jsx m */
 'use strict';
 Object.defineProperty(exports, '__esModule', {
@@ -463,6 +401,8 @@ var ARROW_UP = 38;
 exports.ARROW_UP = ARROW_UP;
 var ARROW_DOWN = 40;
 exports.ARROW_DOWN = ARROW_DOWN;
+var LS_KEY = '_quagga_token';
+exports.LS_KEY = LS_KEY;
 var pd = function pd(e) {
   return e.preventDefault();
 };
@@ -606,7 +546,7 @@ function ab2str(ab) {
   return str;
 }
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
