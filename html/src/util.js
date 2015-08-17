@@ -74,3 +74,15 @@ export function ab2str (ab) {
     str += view[i].toString(16)}
   return str;
 }
+
+export function getToken() {
+  return JSON.parse(localStorage[LS_KEY]||"{}");
+}
+
+export function isNewUser(token) {
+  return true;
+}
+
+export function toggle(prop) {
+  return () => prop(!prop())
+}

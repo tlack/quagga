@@ -7,12 +7,12 @@ if[not`WS_USER in tables[];WS_USER:0N!  ([] uid: ();    wid:())]
 system"S -",($)(*/)(*)"i"$system"openssl rand -hex 2"
 DP:{if[DEBUG;-1 x]}
 DEBUG:1b;
-ISOLATE:1b;
+ISOLATE:0b;
 worker_cmd:$[ISOLATE;"sudo -u qclient /opt/q/l32/q";"q"]
 .h.HOME:"html"
 gulpWatch:{system"gulp watch&"}
 \d .quagga
-/ \e 1
+\e 1
 
 words@:where not (any') not (words:read0`:/usr/share/dict/words) in"c"$(til 26)+"i"$"a"
 
@@ -87,7 +87,8 @@ requestDump:{
 
 handleConnect:{[client_handle;req]
   REQ::req;
-  $[not`uid in key req;[                                                                  DP"generating user token"; / why doesnt this work? req[`uid]:rand 0Ng;
+  $[not`uid in key req;[                                                                  DP"generating user token";
+      / why doesnt this work? req[`uid]:rand 0Ng;
       req:req,(1#`uid)!1#rand 0Ng;
     ];[                                                                                   DP"touching logged in user";
       req:req,flip select name from USERS where uid=req`uid;
@@ -109,7 +110,6 @@ handleConnect:{[client_handle;req]
       update sockets:(distinct each sockets,'client_handle) from `.quagga.w where wid in req[`workspaces;`wid];
       ]];
 
-  / TODO: pull up associated workspaces
   :RES::req
   }
 

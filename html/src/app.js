@@ -7,16 +7,19 @@ import wscon from './wscon'
 const serialize = JSON.stringify;
 const deserialize = JSON.parse;
 import {
-  cl,ce,uuid,fmt,
+  cl,
+  ce,
+  uuid,
+  fmt,
   EHREF,
   ARROW_UP,
   ARROW_DOWN,
   pd,
   noop,
   ab2str,
-  LS_KEY
+  LS_KEY,
+  getToken
 } from './util'
-import viewFn from './app.view';
 
 var USER_TOKEN = JSON.parse(localStorage[LS_KEY]||"{}");
 
@@ -88,16 +91,14 @@ var q = {
 
     statusOpen: m.prop(false),
     dirOpen: m.prop(false),
-    uiDirection: m.prop('column'),
+    uiVertical: m.prop('column'),
     uiDark: m.prop(false),
 
     toggleStatus: () => q.vm.statusOpen(!q.vm.statusOpen()),
-    // takeDump: () => q.ws.send(serialize({u:uuid(), dump:true})),
     toggleDir: () => q.vm.dirOpen(!q.vm.dirOpen()),
-    toggleUiDirection: () => q.vm.uiDirection(q.vm.uiDirection()=='column'?'row':'column'),
     toggleUiColor: () => q.vm.uiDark(!q.vm.uiDark()),
-
-    link: m.prop(''),
+    toggleUiVertical: () => q.vm.uiVertical(!q.vm.uiVertical()),
+    // takeDump: () => q.ws.send(serialize({u:uuid(), dump:true})),
 
     handleHistory: (e) => {
       var cmdHistIdx=q.vm.cmdHistIdx;var cmdHist=q.vm.cmdHist;var d=0;
@@ -113,8 +114,7 @@ var q = {
       // cl({up:e.keyCode==ARROW_UP,down:e.keyCode==ARROW_DOWN,nidx:nIdx,cmdlen:cmdHist.length,stash:q.vm.stashCmd()})
     }
   },
-  view: viewFn
+  view: require('./app.view')
 }
-window.q = q;
-
+export default q;
 m.mount(document.getElementById('app'), q);

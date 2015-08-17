@@ -1,18 +1,10 @@
 /** @jsx m */
 'use strict';
 import m from 'mithril'
-import {fmt} from './util'
+import {fmt, EHREF, isNewUser} from './util'
 import Dir from './Dir'
-
-var Status = {
-  view: (ctrl,args) => {
-    debugger;
-      // {args.dumpLink() ? <a href={args.dumpLink()} target='_blank'>Workspace available for download @ {args.dumpLink()}</a> :null}
-    return <div>
-      <span><strong>Workspace:</strong> {args.wsName()}</span>
-    </div>
-  }
-}
+import Status from './Status'
+import q from './app'
 
 var viewFn = (ctrl, args) => {
   if (!('WebSocket' in window))
@@ -22,13 +14,18 @@ var viewFn = (ctrl, args) => {
 
   var thing= <div className={vm.uiDark()?'dark':''}>
     <div id="nav">
-      <a onclick={vm.toggleStatus.bind()}><i className={`status fa fa-cloud ${vm.statusOpen()?'on':''}`}></i></a>
-      <a onclick={() => ce('what do')}><i className={"terminal fa fa-terminal"}></i></a>
-      <a onclick={vm.toggleDir.bind()}><i className={`dir fa fa-sitemap ${vm.dirOpen()?'on':''}`}></i></a>
-      <a onclick={vm.toggleUiDirection.bind()}><i className={`fa fa-bars ${vm.uiDirection()=='row'?'fa-rotate-90':''}`}/></a>
-      <a onclick={vm.toggleUiColor.bind()}><i className={`fa fa-adjust`}/></a>
+      <a onclick={vm.toggleStatus.bind()}>
+        <i className={`status fa fa-cloud ${vm.statusOpen()?'on':''}`}>S</i></a>
+      <a onclick={() => ce('what do')}>
+        <i className={"terminal fa fa-terminal"}>T</i></a>
+      <a onclick={vm.toggleDir.bind()}>
+        <i className={`dir fa fa-sitemap ${vm.dirOpen()?'on':''}`}>V</i></a>
+      <a onclick={vm.toggleUiVertical.bind()}>
+        <i className={`fa fa-bars ${vm.uiVertical()=='row'?'fa-rotate-90':''}`}>O</i></a>
+      <a onclick={vm.toggleUiColor.bind()}>
+        <i className={`fa fa-adjust`}>C</i></a>
     </div>
-    <div id='panes' style={`flex-direction:${vm.uiDirection()}`}>
+    <div id='panes' style={`flex-direction:${vm.uiVertical()?'column':'row'}`}>
       <div className={`pane status ${vm.statusOpen()?'open':''}`}><Status {...vm}/></div>
       <div className='pane open terminal'>
         <div className='output' config={(el,initd) => { if (vm.jumpDown()) {el.scrollTop=el.scrollHeight; vm.jumpDown(false)} } }>
@@ -56,4 +53,5 @@ var viewFn = (ctrl, args) => {
 
   return thing;
 }
+
 export default viewFn;
