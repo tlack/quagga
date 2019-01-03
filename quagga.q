@@ -1,5 +1,5 @@
 0N!tables[]
-if[not`ACTIVITY in tables[];ACTIVITY:0N!([] dt:0Np;     wid: 0Ng;     uid:0Ng;      expr:enlist"init")]
+if[not`ACTIVITY in tables[];ACTIVITY:0N!([] dt:0Np;     wid: 0Ng;     uid:0Ng;      expr:enlist"init")] / TODO reload instead of run? this makes no sense
 if[not`HITS     in tables[];HITS:0N!    ([] uri: ();    at:();        ip:())]
 if[not`USERS    in tables[];USERS:0N!   ([ uid: ()];    last_dt:())]
 if[not`WS       in tables[];WS:0N!      ([ wid: ()];    name:();      last_dt:());]
